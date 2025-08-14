@@ -69,12 +69,12 @@ database.post(creating_query)
 
 # Данные для подключения по API
 
-# yesterday = str((datetime.now() - timedelta(days=1)).date())
+yesterday = str((datetime.now() - timedelta(days=1)).date())
 
 api_url = API_CREDS["URL"]
-# params = {"date": yesterday}
+params = {"date": yesterday}
 headers = {"Accept": API_CREDS["ACCEPT"]}
-params = {}
+
 # Загрузка данных по API и их сохранение в формате JSON
 
 logging.info("Начало скачивания данных по API")
