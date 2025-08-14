@@ -120,7 +120,7 @@ try:
         database.post(query, values)
     logging.info("Данные записаны в базу")
 except Exception as err:
-    logging.error(f"[{i}] Ошибка при записи в БД: {err}")
+    logging.error(f"Ошибка при записи в БД: {err}")
     try:
         if getattr(database, "connection", None):
             database.connection.rollback()
