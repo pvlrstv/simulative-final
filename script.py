@@ -31,7 +31,7 @@ for file in os.listdir(logs_dir):
         if (
             datetime.now() - datetime.strptime(file.split(".")[0], "%Y_%m_%d")
         ).days > 3:
-            os.remove(file)
+            os.remove(os.path.join(logs_dir, file))
 
 # Настройка логирования
 
