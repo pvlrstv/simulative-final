@@ -69,73 +69,67 @@ database.post(creating_query)
 
 # Данные для подключения по API
 
+yesterday = str((datetime.now() - timedelta(days=1)).date())
+
 api_url = API_CREDS["URL"]
+params = {"date": yesterday}
 headers = {"Accept": API_CREDS["ACCEPT"]}
 
-date = datetime.strptime('2023-10-27', '%Y-%m-%d').date()
+# Загрузка данных по API и их сохранение в формате JSON
 
-logging.info("Начало скачивания исторических данных по API")
-
-while True:
-    params = {"date": str(date)}
-
-    columns = [
-        "client_id",
-        "gender",
-        "purchase_datetime",
-        "purchase_time_as_seconds_from_midnight",
-        "product_id",
-        "quantity",
-        "price_per_item",
-        "discount_per_item",
-        "total_price",
-    ]
-
-    cols_str = ", ".join(columns)
-    values_str = ", ".join(["%s"] * len(columns))
-    try:
-        r = requests.get(url=api_url, params=params, headers=headers)
-        r.raise_for_status()
-        purchases = r.json()
-
-        if not purchases:
-            logging.info(f"Данных за {date} нет. Останавливаем.")
-            break
-
-        logging.info(f"Скачано {len(purchases)} записей за {date}")
-
-        query = f"""
-            INSERT INTO purchases ({cols_str})
-            VALUES ({values_str})
-            ON CONFLICT DO NOTHING;
-        """
-
-        # Занесение загруженных данных в БД
-
-        logging.info("Начало заполнения базы данных")
-
-        try:
-            for i, purchase in enumerate(purchases, start=1):
-                values = [purchase[col] for col in columns]
-                database.post(query, values)
-            logging.info("Данные записаны в базу")
-        except Exception as err:
-            logging.error(f"Ошибка при записи в БД: {err}")
-            try:
-                if getattr(database, "connection", None):
-                    database.connection.rollback()
-            except Exception:
-                logging.exception("Ошибка при rollback")
-
-    except Exception as err:
-        logging.error(f"Ошибка доступа к API за {date}: {err}")
-        break
-
-    date -= timedelta(days=1)
+logging.info("Начало скачивания данных по API")
 
 try:
-    if getattr(database, "connection", None):
-        database.connection.close()
-except Exception:
-    logging.exception("Ошибка при закрытии соединения")
-logging.info("Соединение с базой данных закрыто")
+    r = requests.get(url=api_url, params=params, headers=headers)
+    r.raise_for_status()
+    purchases = r.json()
+    logging.info("Скачивание данных завершено успешно")
+except Exception as err:
+    logging.error(f"Ошибка доступа к API, код: {r.status_code}, ошибка: {err}")
+
+# Подготовка к занесению данных
+
+columns = [
+    "client_id",
+    "gender",
+    "purchase_datetime",
+    "purchase_time_as_seconds_from_midnight",
+    "product_id",
+    "quantity",
+    "price_per_item",
+    "discount_per_item",
+    "total_price",
+]
+
+cols_str = ", ".join(columns)
+values_str = ", ".join(["%s"] * len(columns))
+
+query = f"""
+    INSERT INTO purchases ({cols_str})
+    VALUES ({values_str})
+    ON CONFLICT DO NOTHING;
+"""
+
+# Занесение загруженных данных в БД
+
+logging.info("Начало заполнения базы данных")
+
+try:
+    for i, purchase in enumerate(purchases, start=1):
+        values = [purchase[col] for col in columns]
+        database.post(query, values)
+    logging.info("Данные записаны в базу")
+except Exception as err:
+    logging.error(f"Ошибка при записи в БД: {err}")
+    try:
+        if getattr(database, "connection", None):
+            database.connection.rollback()
+    except Exception:
+        logging.exception("Ошибка при rollback")
+finally:
+    try:
+        if getattr(database, "connection", None):
+            database.connection.close()
+    except Exception:
+        logging.exception("Ошибка при закрытии соединения")
+    logging.info("Соединение с базой данных закрыто")
