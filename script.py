@@ -72,7 +72,7 @@ database.post(creating_query)
 api_url = API_CREDS["URL"]
 headers = {"Accept": API_CREDS["ACCEPT"]}
 
-date = datetime.now().date()
+date = datetime.strptime('2023-10-27', '%Y-%m-%d').date()
 
 logging.info("Начало скачивания исторических данных по API")
 
